@@ -1,0 +1,31 @@
+parameters: {} 
+
+jobs:
+  - deployment: webapp_deploy
+    displayName: "Deploy to WebApp"
+    environment: "West Europe ACI" 
+    pool:
+      vmImage: 'ubuntu-16.04'
+    strategy: 
+      runOnce:
+        deploy:
+          pool:
+            vmImage: 'ubuntu-16.04'
+          steps:
+            - checkout: self
+              clean: true
+              submodules: recursive
+              persistCredentials: true   
+            - task: AzureCLI@2
+              displayName: az webapp create
+              inputs:
+                azureSubscription: "TheAzureSubscription"
+                scriptType: bash
+                scriptLocation: inlineScript
+                inlineScript: |
+                  if [ $(az group exists --name ng-git-meetup-web-app-rgp) = false ]; then
+                    az group create --name ng-git-meetup-web-app-rgp --location westeurope
+                    az appservice plan create --name ng-git-plan --resource-group ng-git-meetup-web-app-rgp --is-linux --number-of-workers 1 --sku B1
+                  fi
+                  
+                  az webapp create --plan ng-git-plan --resource-group ng-git-meetup-web-app-rgp --name ng-git-meetup --deployment-container-image-name girlsintechpl/ng-git-meetup:$(Build.BuildNumber)

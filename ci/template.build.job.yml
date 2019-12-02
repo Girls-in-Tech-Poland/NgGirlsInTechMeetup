@@ -1,0 +1,54 @@
+parameters: {} 
+
+jobs:
+  - job: app_build
+    displayName: "npm build & test"
+    pool:
+      vmImage: 'ubuntu-16.04'
+    workspace:
+      clean: all
+    steps:
+      - checkout: self
+        clean: true
+        submodules: recursive
+        persistCredentials: true   
+      - task: NodeTool@0 
+        displayName: "install nodejs 10.x"
+        inputs:
+          versionSpec: 10.x
+      - task: Npm@1
+        displayName: "npm install"
+        inputs:
+          command: install
+          workingDir: "$(System.DefaultWorkingDirectory)/ng-git-meetup"
+      - task: Npm@1
+        displayName: "npm run lint"
+        inputs:
+          command: custom
+          customCommand: "run lint"
+          workingDir: "$(System.DefaultWorkingDirectory)/ng-git-meetup" 
+      - task: Npm@1
+        displayName: "npm run test"
+        inputs:
+          command: custom
+          customCommand: "run test:ci"
+          workingDir: "$(System.DefaultWorkingDirectory)/ng-git-meetup" 
+      - task: Npm@1
+        displayName: "npm run build"
+        inputs:
+          command: custom
+          customCommand: "run build"
+          workingDir: "$(System.DefaultWorkingDirectory)/ng-git-meetup"     
+      - task: PublishTestResults@2
+        displayName: "publish test results"
+        condition: always()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: "*.xml"
+          searchFolder: "$(System.DefaultWorkingDirectory)/ng-git-meetup/output/results/junit"
+      - task: PublishCodeCoverageResults@1
+        displayName: "publish code-coverage results"
+        condition: always()
+        inputs:
+          summaryFileLocation: "$(System.DefaultWorkingDirectory)/ng-git-meetup/output/coverage/jest/cobertura-coverage.xml"          
+          codecoverageTool: Cobertura

@@ -1,0 +1,33 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+trigger:
+  batch: true
+  branches:
+    include:
+      - master
+  paths:
+    include:
+    - ng-git-meetup/*
+    - ci/*
+
+stages:
+  - stage: build
+    displayName: 'Build ng-git-meetup'
+    jobs:
+      - template: template.build.job.yml
+      - template: template.docker.job.yml
+        parameters:
+          Docker.Registry: "DockerHub.GirlsInTechPL"
+
+  - stage: aci_deployment
+    displayName: 'Deploy to ACI'
+    dependsOn:
+    - build
+    jobs:
+      - template: template.aci.job.yml
+
+  - stage: webapp_deployment
+    displayName: 'Deploy to WebApp'
+    dependsOn:
+    - build
+    jobs:
+      - template: template.webapp.job.yml

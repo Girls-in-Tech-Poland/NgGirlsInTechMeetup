@@ -1,0 +1,29 @@
+parameters: {} 
+
+jobs:
+  - deployment: aci_deploy
+    displayName: "Deploy to ACI"
+    environment: "West Europe ACI" 
+    pool:
+      vmImage: 'ubuntu-16.04'
+    strategy: 
+      runOnce:
+        deploy:
+          pool:
+            vmImage: 'ubuntu-16.04'
+          steps:
+            - checkout: self
+              clean: true
+              submodules: recursive
+              persistCredentials: true   
+            - task: AzureCLI@2
+              displayName: az container create
+              inputs:
+                azureSubscription: "TheAzureSubscription"
+                scriptType: bash
+                scriptLocation: inlineScript
+                inlineScript: |
+                  if [ $(az group exists --name ng-git-meetup-rgp) = false ]; then
+                    az group create --name ng-git-meetup-rgp --location westeurope
+                  fi
+                  az container create --location westeurope --resource-group ng-git-meetup-rgp --name ng-git-meetup --image girlsintechpl/ng-git-meetup:$(Build.BuildNumber) --cpu 1 --memory 1 --dns-name-label ng-git-meetup --ports 80
